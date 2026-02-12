@@ -154,9 +154,41 @@ api/
 ## 🛠️ Available Scripts
 
 - `npm run dev` - Start server in development mode with hot reload
+- `npm run build` - Compile TypeScript to JavaScript
+- `npm start` - Start server in production mode
 - `npx prisma studio` - Open visual database interface
 - `npx prisma migrate dev` - Create and apply new migrations
 - `npx prisma generate` - Generate Prisma Client
+
+## 🐳 Docker
+
+### Using Docker Compose (Recommended)
+
+```bash
+# Build and start the container
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the container
+docker-compose down
+
+# Stop and remove volumes (deletes database)
+docker-compose down -v
+```
+
+### Using Docker directly
+
+```bash
+# Build image
+docker build -t url-shortener-api .
+
+# Run container
+docker run -p 3000:3000 -v
+```
+
+The API will be available at `http://localhost:3000`
 
 ## 📝 Usage Example
 

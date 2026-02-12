@@ -6,4 +6,4 @@ export const linkRouter = Router();
 
 linkRouter.post("/links", createLink);
 
-linkRouter.get("/:code", redirectLink);
+linkRouter.get("/links/:code", redirectLink);
