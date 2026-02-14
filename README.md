@@ -5,10 +5,13 @@ REST API for shortening URLs, with click tracking and automatic redirection.
 ## 📋 Features
 
 - ✅ Shorten long URLs by generating unique codes
+- ✅ URL validation (http/https, protocol and TLD required)
 - ✅ Automatic redirection to original URL
 - ✅ Real-time click tracking
-- ✅ List created links
+- ✅ List all created links
 - ✅ Data persistence with SQLite
+- ✅ Configurable base URL for shortened links
+- ✅ Graceful shutdown
 
 ## 🚀 Technologies
 
@@ -18,6 +21,7 @@ REST API for shortening URLs, with click tracking and automatic redirection.
 - **[Prisma](https://www.prisma.io/)** - Modern ORM for Node.js
 - **[SQLite](https://www.sqlite.org/)** - Lightweight relational database
 - **[Better SQLite3](https://github.com/WiseLibs/better-sqlite3)** - High-performance SQLite driver
+- **[Validator](https://github.com/validatorjs/validator.js)** - String validation library
 
 ## 📦 Prerequisites
 
@@ -48,7 +52,14 @@ Create a `.env` file in the project root:
 ```env
 PORT=3000
 DATABASE_URL="file:./dev.db"
+BASE_URL="http://localhost:3000"
 ```
+
+| Variable      | Required | Description                                              |
+| ------------- | -------- | -------------------------------------------------------- |
+| `PORT`        | Yes      | Port the server will listen on                           |
+| `DATABASE_URL`| Yes      | SQLite connection string (e.g. `file:./dev.db`)          |
+| `BASE_URL`    | Yes      | Base URL for shortened links (e.g. `http://localhost:3000`) |
 
 4. **Run database migrations:**
 
@@ -101,12 +112,23 @@ Content-Type: application/json
 }
 ```
 
-**Response:**
+**Success Response (201):**
 
 ```json
 {
     "message": "Link criado com sucesso!",
+    "shortCode": "abc123",
     "url": "http://localhost:3000/abc123"
+}
+```
+
+**Validation Error (400):**
+
+When the URL is invalid (missing protocol, invalid format, etc.):
+
+```json
+{
+    "message": "URL inválida"
 }
 ```
 
@@ -119,6 +141,34 @@ GET /:code
 Example: `GET /abc123`
 
 Redirects (HTTP 302) to the original URL and increments the click counter.
+
+**Error Response (404):** Link not found
+
+```json
+{
+    "message": "Link não encontrado"
+}
+```
+
+### 4. List all links
+
+```http
+GET /links/all
+```
+
+**Response (200):**
+
+```json
+[
+    {
+        "id": "clxyz123...",
+        "original": "https://example.com/page",
+        "shortCode": "abc123",
+        "clicks": 5,
+        "createdAt": "2024-01-15T10:30:00.000Z"
+    }
+]
+```
 
 ## 🗄️ Database Structure
 
@@ -138,12 +188,17 @@ Redirects (HTTP 302) to the original URL and increments the click counter.
 api/
 ├── prisma/
 │   ├── schema.prisma       # Database schema
-│   └── migrations/         # Prisma migrations
+│   ├── migrations/         # Prisma migrations
+│   └── prisma.config.ts    # Prisma configuration
 ├── src/
 │   ├── db/
 │   │   └── db-config.ts    # SQLite adapter configuration
-│   ├── links/
-│   │   └── route.ts        # Links routes
+│   ├── routes/
+│   │   ├── linkRoute.ts    # Links routes
+│   │   └── links/
+│   │       ├── create.ts   # Create shortened link
+│   │       ├── findAll.ts  # List all links
+│   │       └── redirect.ts # Redirect by short code
 │   └── index.ts            # Main server
 ├── package.json
 ├── tsconfig.json
@@ -178,6 +233,16 @@ docker-compose down
 docker-compose down -v
 ```
 
+To use a custom base URL with Docker, add `BASE_URL` to the `environment` section in `docker-compose.yml`:
+
+```yaml
+environment:
+    - NODE_ENV=production
+    - PORT=3000
+    - DATABASE_URL=file:/app/data/dev.db
+    - BASE_URL=https://seusite.com
+```
+
 ### Using Docker directly
 
 ```bash
@@ -185,7 +250,11 @@ docker-compose down -v
 docker build -t url-shortener-api .
 
 # Run container
-docker run -p 3000:3000 -v
+docker run -p 3000:3000 \
+  -e DATABASE_URL="file:/app/data/dev.db" \
+  -e BASE_URL="http://localhost:3000" \
+  -v url-shortener-data:/app/data \
+  url-shortener-api
 ```
 
 The API will be available at `http://localhost:3000`
@@ -197,6 +266,9 @@ The API will be available at `http://localhost:3000`
 curl -X POST http://localhost:3000/links \
   -H "Content-Type: application/json" \
   -d '{"original": "https://github.com/prisma/prisma"}'
+
+# List all links
+curl http://localhost:3000/links/all
 
 # Access the shortened link (via browser or curl)
 curl -L http://localhost:3000/abc123
