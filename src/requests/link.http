@@ -5,8 +5,11 @@ POST {{base_url}}/links
 Content-Type: application/json
 
 {
-    "original": "https://www.youtube.com"
+    "original": "http=://escola.formacao"
 }
 
 ### redirect link endpoint
-GET {{base_url}}/javvl5
+GET {{base_url}}/javvl5x
+
+### get all links endpoint
+GET {{base_url}}/links/all

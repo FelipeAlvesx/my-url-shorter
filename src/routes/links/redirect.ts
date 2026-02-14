@@ -1,8 +1,6 @@
-import { adapter } from "../../db/db-config.ts";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../index.ts";
 import express from "express";
 
-const prisma = new PrismaClient({ adapter });
 
 export async function redirectLink(
     req: express.Request,

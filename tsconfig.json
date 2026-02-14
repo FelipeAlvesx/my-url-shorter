@@ -39,7 +39,6 @@
         "allowImportingTsExtensions": true,
         "emitDeclarationOnly": true,
         "isolatedModules": false,
-        "noUncheckedSideEffectImports": true,
         "moduleDetection": "force",
         "skipLibCheck": true
     }
