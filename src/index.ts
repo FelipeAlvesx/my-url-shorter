@@ -13,7 +13,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(linkRouter);
 app.use("/auth", authRouter);
 
-app.get("/ping", (req, res) => {
+app.get("/health/ping", (req, res) => {
     res.json({ message: "pong" });
 });
 
