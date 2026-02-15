@@ -3,6 +3,7 @@ import express from "express";
 import "dotenv/config";
 import { adapter } from "./db/db-config.ts";
 import { linkRouter } from "./routes/linkRoute.ts";
+import { authRouter } from "./routes/authRoute.ts";
 
 const app = express();
 const PORT = process.env.PORT;
@@ -10,6 +11,7 @@ export const prisma = new PrismaClient({ adapter });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(linkRouter);
+app.use("/auth", authRouter);
 
 app.get("/ping", (req, res) => {
     res.json({ message: "pong" });

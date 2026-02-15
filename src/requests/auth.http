@@ -1,0 +1,10 @@
+@base_url=http://localhost:3000
+
+### register endpoint
+POST {{base_url}}/auth/register
+Content-Type: application/json
+
+{
+    "email": "teste@teste.com",
+    "password": "123456"
+}
