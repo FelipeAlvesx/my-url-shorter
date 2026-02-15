@@ -23,10 +23,9 @@ REST API for shortening URLs, with click tracking and automatic redirection.
 - **[SQLite](https://www.sqlite.org/)** - Lightweight relational database
 - **[Better SQLite3](https://github.com/WiseLibs/better-sqlite3)** - High-performance SQLite driver
 - **[Validator](https://github.com/validatorjs/validator.js)** - String validation library
-- **[JWT (jsonwebtoken)](https://github.com/auth0/node-jsonwebtoken)** - JSON Web Token implementation
+- **[JWT](https://github.com/auth0/node-jsonwebtoken)** - JSON Web Token implementation
 - **[bcrypt](https://github.com/kelektiv/node.bcrypt.js)** - Password hashing library
 - **[Swagger UI Express](https://github.com/scottie1984/swagger-ui-express)** - Auto-generated API documentation
-- **[Swagger JSDoc](https://github.com/Surnet/swagger-jsdoc)** - JSDoc annotations for OpenAPI
 
 ## 📦 Prerequisites
 
