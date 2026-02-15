@@ -9,6 +9,10 @@ REST API for shortening URLs, with click tracking and automatic redirection.
 - ✅ Automatic redirection to original URL
 - ✅ Real-time click tracking
 - ✅ List all created links
+- ✅ JWT authentication system
+- ✅ User registration and login
+- ✅ Protected routes with JWT middleware
+- ✅ Interactive API documentation with Swagger/OpenAPI
 - ✅ Data persistence with SQLite
 - ✅ Configurable base URL for shortened links
 - ✅ Graceful shutdown
@@ -22,6 +26,10 @@ REST API for shortening URLs, with click tracking and automatic redirection.
 - **[SQLite](https://www.sqlite.org/)** - Lightweight relational database
 - **[Better SQLite3](https://github.com/WiseLibs/better-sqlite3)** - High-performance SQLite driver
 - **[Validator](https://github.com/validatorjs/validator.js)** - String validation library
+- **[JWT (jsonwebtoken)](https://github.com/auth0/node-jsonwebtoken)** - JSON Web Token implementation
+- **[bcrypt](https://github.com/kelektiv/node.bcrypt.js)** - Password hashing library
+- **[Swagger UI Express](https://github.com/scottie1984/swagger-ui-express)** - Auto-generated API documentation
+- **[Swagger JSDoc](https://github.com/Surnet/swagger-jsdoc)** - JSDoc annotations for OpenAPI
 
 ## 📦 Prerequisites
 
@@ -53,13 +61,15 @@ Create a `.env` file in the project root:
 PORT=3000
 DATABASE_URL="file:./dev.db"
 BASE_URL="http://localhost:3000"
+JWT_SECRET="your-super-secret-key-change-this-in-production"
 ```
 
-| Variable      | Required | Description                                              |
-| ------------- | -------- | -------------------------------------------------------- |
-| `PORT`        | Yes      | Port the server will listen on                           |
-| `DATABASE_URL`| Yes      | SQLite connection string (e.g. `file:./dev.db`)          |
-| `BASE_URL`    | Yes      | Base URL for shortened links (e.g. `http://localhost:3000`) |
+| Variable       | Required | Description                                                   |
+| -------------- | -------- | ------------------------------------------------------------- |
+| `PORT`         | Yes      | Port the server will listen on                                |
+| `DATABASE_URL` | Yes      | SQLite connection string (e.g. `file:./dev.db`)               |
+| `BASE_URL`     | Yes      | Base URL for shortened links (e.g. `http://localhost:3000`)   |
+| `JWT_SECRET`   | Yes      | Secret key for JWT token signing (use a strong random string) |
 
 4. **Run database migrations:**
 
@@ -87,7 +97,77 @@ The server will be running at `http://localhost:3000`
 
 ## 📡 API Endpoints
 
-### 1. Health Check
+### 📚 Interactive Documentation
+
+Access the complete interactive API documentation at:
+
+```
+http://localhost:3000/api-docs
+```
+
+The Swagger UI provides:
+
+- Complete endpoint documentation
+- Request/response schemas
+- Try-it-out feature to test endpoints directly
+- Authentication support (JWT tokens)
+
+---
+
+### Authentication Endpoints
+
+#### 1. Register new user
+
+```http
+POST /auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "SecurePass123"
+}
+```
+
+**Success Response (201):**
+
+```json
+{
+    "message": "User Created"
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request:** Email or password missing
+- **409 Conflict:** User already exists
+
+#### 2. Login
+
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "SecurePass123"
+}
+```
+
+**Success Response (200):**
+
+```json
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Error Response (401):** Unauthorized - Invalid credentials
+
+---
+
+### Link Endpoints
+
+#### 1. Health Check
 
 ```http
 GET /ping
@@ -101,11 +181,14 @@ GET /ping
 }
 ```
 
-### 2. Create shortened link
+#### 2. Create shortened link
+
+🔒 **Protected route - Requires authentication**
 
 ```http
 POST /links
 Content-Type: application/json
+Authorization: Bearer <your-jwt-token>
 
 {
   "original": "https://example.com/very-long-url"
@@ -122,17 +205,15 @@ Content-Type: application/json
 }
 ```
 
-**Validation Error (400):**
+**Error Responses:**
 
-When the URL is invalid (missing protocol, invalid format, etc.):
+- **400 Bad Request:** Invalid URL (missing protocol, invalid format, etc.)
+    ```json
+    { "message": "URL inválida" }
+    ```
+- **401 Unauthorized:** Missing or invalid JWT token
 
-```json
-{
-    "message": "URL inválida"
-}
-```
-
-### 3. Redirect to original URL
+#### 3. Redirect to original URL
 
 ```http
 GET /:code
@@ -150,13 +231,16 @@ Redirects (HTTP 302) to the original URL and increments the click counter.
 }
 ```
 
-### 4. List all links
+#### 4. List all links
+
+🔒 **Protected route - Requires authentication**
 
 ```http
 GET /links/all
+Authorization: Bearer <your-jwt-token>
 ```
 
-**Response (200):**
+**Success Response (200):**
 
 ```json
 [
@@ -170,6 +254,10 @@ GET /links/all
 ]
 ```
 
+**Error Response:**
+
+- **401 Unauthorized:** Missing or invalid JWT token
+
 ## 🗄️ Database Structure
 
 ### Model: Link
@@ -182,28 +270,47 @@ GET /links/all
 | clicks    | Int      | Click counter               |
 | createdAt | DateTime | Creation date               |
 
+### Model: User
+
+| Field        | Type     | Description            |
+| ------------ | -------- | ---------------------- |
+| id           | String   | Unique ID (CUID)       |
+| email        | String   | User email (unique)    |
+| passwordHash | String   | Bcrypt hashed password |
+| createdAt    | DateTime | Account creation date  |
+
 ## 📁 Project Structure
 
 ```
 api/
 ├── prisma/
-│   ├── schema.prisma       # Database schema
-│   ├── migrations/         # Prisma migrations
-│   └── prisma.config.ts    # Prisma configuration
+│   ├── schema.prisma          # Database schema
+│   ├── migrations/            # Prisma migrations
+│   └── prisma.config.ts       # Prisma configuration
 ├── src/
+│   ├── config/
+│   │   └── swagger.ts         # Swagger/OpenAPI configuration
 │   ├── db/
-│   │   └── db-config.ts    # SQLite adapter configuration
+│   │   └── db-config.ts       # SQLite adapter configuration
+│   ├── middlewares/
+│   │   └── jwtMiddleware.ts   # JWT authentication middleware
 │   ├── routes/
-│   │   ├── linkRoute.ts    # Links routes
+│   │   ├── authRoute.ts       # Authentication routes
+│   │   ├── linkRoute.ts       # Links routes
+│   │   ├── auth/
+│   │   │   ├── login.ts       # Login handler
+│   │   │   └── register.ts    # User registration handler
 │   │   └── links/
-│   │       ├── create.ts   # Create shortened link
-│   │       ├── findAll.ts  # List all links
-│   │       └── redirect.ts # Redirect by short code
-│   └── index.ts            # Main server
+│   │       ├── create.ts      # Create shortened link
+│   │       ├── findAll.ts     # List all links
+│   │       ├── redirect.ts    # Redirect by short code
+│   │       └── validator/
+│   │           └── urlValidator.ts # URL validation
+│   └── index.ts               # Main server
 ├── package.json
 ├── tsconfig.json
 ├── prisma.config.ts
-└── .env                    # Environment variables (create this)
+└── .env                       # Environment variables (create this)
 ```
 
 ## 🛠️ Available Scripts
@@ -259,20 +366,48 @@ docker run -p 3000:3000 \
 
 The API will be available at `http://localhost:3000`
 
-## 📝 Usage Example
+## 📝 Usage Examples
+
+### Authentication Flow
 
 ```bash
-# Create a shortened link
+# 1. Register a new user
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "SecurePass123"}'
+
+# 2. Login to get JWT token
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "SecurePass123"}'
+
+# Response: {"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
+```
+
+### Link Management
+
+```bash
+# 3. Create a shortened link (using the token from login)
 curl -X POST http://localhost:3000/links \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
   -d '{"original": "https://github.com/prisma/prisma"}'
 
-# List all links
-curl http://localhost:3000/links/all
+# 4. List all links (requires authentication)
+curl http://localhost:3000/links/all \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
 
-# Access the shortened link (via browser or curl)
+# 5. Access the shortened link (no authentication needed)
 curl -L http://localhost:3000/abc123
 ```
+
+### Interactive Testing
+
+For easier testing, use the Swagger UI at `http://localhost:3000/api-docs`:
+
+1. Click "Authorize" button
+2. Enter your JWT token: `Bearer YOUR_TOKEN_HERE`
+3. Test all endpoints interactively
 
 ## 🔒 Graceful Shutdown
 
